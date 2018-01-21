@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Vue watch</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+    }
+
+    body {
+      margin: 0 auto;
+      padding: 20px;
+      width: 800;
+      font-size: 16px;
+    }
+    .sub{ font-size: 12px; color: #999; }
+    .sug-wrap{ display: none !important; }
+    .frame-outer{
+      height: 600px; 
+      width: 100%;
+      overflow: hidden;
+      background: #EEE;
+    }
+    .iframe {
+      border: none;
+      margin-top: -55px;
+      height: 655px; 
+      width: 100%;
+      overflow: scroll;
+    }
+
+    .group {
+      margin-bottom: 50px;
+    }
+
+    input {
+      margin: 5px 0 15px;
+      display: block;
+      padding: 10px 6px;
+      width: 280px;
+      outline: none;
+      border: 1px solid #EEE;
+    }
+
+    .img-box {
+      display: block;
+      height: 120px;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+  <!-- axios -->
+  <script src="https://cdn.jsdelivr.net/npm/axios@0.12.0/dist/axios.min.js"></script>
+  <!-- lodash -->
+  <script src="https://cdn.jsdelivr.net/npm/lodash@4.13.1/lodash.min.js"></script>
+</head>
+
+<body>
+  <div id="search">
+    <div class="group">
+      <h2>百度搜索<span class="sub">{{ bdhot.answer }}</span></h2>
+        <input type="text" v-model="bdhot.word" /> 
+      <div class="frame-outer">
+        <iframe :src="bdhot.searhUrl" class="iframe"></iframe>
+      </div>
+    </div>
+
+    <div class="group">
+      请输入你的问题:
+      <p><input type="text" v-model="customer.question"></p>
+      <p>{{ customer.answer }}</p>
+      <p><img class="img-box" :src="customer.image" /></p>
+    </div>
+  </div>
+
+  <script>
+  var searchBar = new Vue({
+    el: '#search',
+    data: {
+      customer: {
+        question: '',
+        answer: '',
+        image: ''
+      },
+      bdhot: {
+        word: '',
+        answer: '',
+        searhUrl: 'https://www.baidu.com/s?wd=123'
+      }
+    },
+    watch: {
+      'customer.question': function (newVal, oldVal) {
+        this.customer.answer = '您正在输入...'
+        this.getAnswer('customer');
+      },
+      'bdhot.word': function (newVal, oldVal) {
+        this.bdhot.answer = '您正在输入...';
+        this.getAnswer('baidu');
+      }
+    },
+    methods: {
+      getAnswer: _.debounce(function (input) {
+        if (input === 'customer') {
+          this.getCusAnswer();
+        } else if (input === 'baidu') {
+          this.getBaiduAnswer();
+        }
+      }, 500),
+      getCusAnswer() {
+        this.customer.answer = '思考中...';
+        if(!this.customer.question.match(/\?$/)) {
+          this.customer.answer = '正确的提问格式应该是以 ? 结尾的哦~'
+          return;
+        }
+        var vmW = this;
+        axios.get('https://yesno.wtf/api').then(function (res) {
+          vmW.customer.answer = _.capitalize(res.data.answer)
+          vmW.customer.image = res.data.image
+        }).catch(function (error) {
+          vmW.customer.answer = error
+        })
+      },
+      getBaiduAnswer() {
+        if(this.bdhot.word === '') {
+          this.bdhot.answer = '';
+          return;
+        }
+        this.bdhot.answer = '';
+        this.bdhot.searhUrl = 'https://www.baidu.com/s?wd=' + this.bdhot.word;
+      }
+    }
+  })
+  </script>
+</body>
+
+</html>
